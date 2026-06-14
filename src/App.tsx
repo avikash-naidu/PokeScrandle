@@ -32,16 +32,16 @@ export default function App() {
     const loser   = side === 'left' ? right : left
     const correct = winner.eatScore >= loser.eatScore
 
-    const [winnerStats, loserStats] = await Promise.all([
-      getStats(winner.id),
-      getStats(loser.id),
-    ])
-
     try {
       await recordResult(winner.id, loser.id)
     } catch (e) {
       console.warn('recordResult failed:', e)
     }
+    
+    const [winnerStats, loserStats] = await Promise.all([
+      getStats(winner.id),
+      getStats(loser.id),
+    ])
 
     setStats(
       side === 'left'

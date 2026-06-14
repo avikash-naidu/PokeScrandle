@@ -1,0 +1,149 @@
+.card {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.8rem 1.2rem 1.4rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.15s ease,
+    background 0.15s ease, opacity 0.3s ease;
+  animation: popIn 0.3s ease forwards;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(240, 165, 0, 0.07),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* Hover only when clickable */
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  transform: translateY(-5px);
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.clickable:hover .sprite {
+  filter: drop-shadow(0 6px 18px rgba(240, 165, 0, 0.45));
+}
+
+.clickable:active {
+  transform: translateY(-2px);
+}
+
+/* Reveal states */
+.winner {
+  border-color: var(--green);
+  background: rgba(46, 160, 67, 0.09);
+  cursor: default;
+}
+
+.winner .sprite {
+  filter: drop-shadow(0 4px 16px rgba(46, 160, 67, 0.55));
+}
+
+.winner .pctLabel {
+  color: #56d364;
+}
+
+.loser {
+  border-color: var(--red);
+  background: rgba(218, 54, 51, 0.08);
+  opacity: 0.62;
+  cursor: default;
+}
+
+.loser .pctLabel {
+  color: #ff7b72;
+}
+
+/* Sprite */
+.sprite {
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 12px rgba(240, 165, 0, 0.22));
+  transition: filter 0.2s ease;
+  user-select: none;
+}
+
+/* Name */
+.name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.75rem;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  text-transform: uppercase;
+  margin-top: 0.6rem;
+}
+
+/* % bar */
+.barWrap {
+  margin-top: 0.9rem;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.35s ease 0.1s, transform 0.35s ease 0.1s;
+  pointer-events: none;
+}
+
+.barVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.barTrack {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  width: 0%;
+  background: var(--text-muted);
+  transition: width 0.75s cubic-bezier(0.4, 0, 0.2, 1) 0.2s;
+}
+
+.fillWin  { background: var(--green); }
+.fillLose { background: var(--red); }
+
+.pctLabel {
+  display: block;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+  margin-top: 0.3rem;
+  color: var(--text-muted);
+  transition: color 0.3s ease;
+}
+
+/* Matchup count */
+.matchups {
+  font-size: 0.75rem;
+  color: var(--text-subtle);
+  margin-top: 0.3rem;
+  min-height: 1em;
+}
+
+/* Entry animation */
+@keyframes popIn {
+  0%   { transform: scale(0.86); opacity: 0; }
+  70%  { transform: scale(1.03); }
+  100% { transform: scale(1);    opacity: 1; }
+}

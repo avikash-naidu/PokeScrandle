@@ -1,2 +1,0 @@
-# PokeScrandle
-Pokemon Scrandle Game

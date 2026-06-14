@@ -30,7 +30,7 @@ export default function App() {
 
     const winner  = side === 'left' ? left  : right
     const loser   = side === 'left' ? right : left
-    const correct = winner.eatScore >= loser.eatScore
+   
 
     try {
       await recordResult(winner.id, loser.id)
@@ -43,11 +43,15 @@ export default function App() {
       getStats(loser.id),
     ])
 
+     const correct = winnerStats.votes/ winnerStats.appearances >= loserStats.votes / loserStats.appearances
+
     setStats(
       side === 'left'
         ? { left: winnerStats, right: loserStats }
         : { left: loserStats, right: winnerStats },
     )
+
+    
 
     setResult({
       correct,

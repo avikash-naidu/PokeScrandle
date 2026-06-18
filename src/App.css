@@ -118,3 +118,22 @@ body {
     width: 100%;
   }
 }
+
+.view-results-btn {
+  margin-top: 1.5rem;
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 1.4rem;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.view-results-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}

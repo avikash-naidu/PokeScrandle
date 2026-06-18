@@ -34,3 +34,21 @@ export interface GuessResult {
   correct: boolean
   message: string
 }
+// Result of a single round — null means not answered yet
+export type RoundResult = 'correct' | 'incorrect' | null
+
+// One matchup in the daily set
+export interface Matchup {
+  left:  Pokemon
+  right: Pokemon
+}
+
+// The mode the game is in
+export type GameMode = 'daily'  // can extend later with 'streak' etc
+
+// Saved to localStorage so progress persists on refresh
+export interface DailyProgress {
+  date:      string        // "2024-01-15"
+  results:   RoundResult[] // length 10, null = not played yet
+  completed: boolean
+}

@@ -1,4 +1,4 @@
-import type { Pokemon } from '../types'
+import type { Pokemon, Matchup } from '../types'
 
 export const POKEMON: Pokemon[] = [
   { id: 1,   name: 'Bulbasaur',   eatScore: 55, reason: 'Basically a walking salad with legs' },
@@ -166,4 +166,44 @@ export function randomPokemon(exclude: Pokemon | null = null): Pokemon {
     pick = POKEMON[Math.floor(Math.random() * POKEMON.length)]
   } while (pick === exclude)
   return pick
+}
+
+
+export function getDailyMatchups(): Matchup[] {
+  const seed   = new Date().toISOString().slice(0, 10)
+  const rand   = seededRandom(seed)
+  const pool   = [...POKEMON]
+  const matchups: Matchup[] = []
+
+  for (let i = 0; i < 10; i++) {
+    // Pick left
+    const leftIdx = Math.floor(rand() * pool.length)
+    const left    = pool.splice(leftIdx, 1)[0]
+
+    // Pick right — from remaining pool so no repeats
+    const rightIdx = Math.floor(rand() * pool.length)
+    const right    = pool.splice(rightIdx, 1)[0]
+
+    matchups.push({ left, right })
+  }
+
+  return matchups
+}
+
+// "2024-01-15" always produces the same sequence
+function seededRandom(seed: string) {
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    hash = Math.imul(31, hash) + seed.charCodeAt(i) | 0
+  }
+  return () => {
+    hash ^= hash << 13
+    hash ^= hash >> 17
+    hash ^= hash << 5
+    return (hash >>> 0) / 0xFFFFFFFF
+  }
+}
+
+function todaysSeed(): string {
+  return new Date().toISOString().slice(0, 10) // "2024-01-15"
 }

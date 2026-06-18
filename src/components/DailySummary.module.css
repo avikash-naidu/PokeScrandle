@@ -3,10 +3,11 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
   display: flex;
-  align-items: center;
+  align-items: flex-start;        /* ← was center, change to flex-start */
   justify-content: center;
   z-index: 100;
-  animation: fadeIn 0.2s ease forwards;
+  overflow-y: auto;               /* ← allows the overlay itself to scroll */
+  padding: 2rem 1rem;             /* ← breathing room top and bottom */
 }
 
 .card {
@@ -16,9 +17,11 @@
   padding: 2.5rem 2rem;
   text-align: center;
   width: 100%;
-  max-width: 360px;
-  margin: 1rem;
-  animation: popIn 0.3s ease forwards;
+  max-width: 400px;
+  max-height: 90vh;               /* ← never taller than 90% of screen */
+  overflow-y: auto;               /* ← card itself scrolls if content overflows */
+  margin: auto;                   /* ← keeps it centred when content is short */
+  position: relative;
 }
 
 .title {
@@ -88,6 +91,31 @@
   color: var(--accent);
 }
 
+.matchupRow img {
+  width: 48px;       /* ← smaller sprites in the summary */
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--radius);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.closeBtn:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }

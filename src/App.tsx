@@ -1,143 +1,153 @@
-import { useState, useCallback } from 'react'
-import PokemonCard  from './components/PokemonCard'
-import ResultBanner from './components/ResultBanner'
-import GameOver     from './components/GameOver'
-import { randomPokemon } from './data/pokemon'
-import { getStats, recordResult } from './lib/supabase'
-import type { GamePhase, RoundState, StatsState, GuessResult } from './types'
-import './App.css'
-
-function initRound(): RoundState {
-  const left  = randomPokemon()
-  const right = randomPokemon(left)
-  return { left, right }
-}
+import { useState } from "react";
+import PokemonCard from "./components/PokemonCard";
+import ResultBanner from "./components/ResultBanner";
+import { getDailyMatchups } from "./data/pokemon";
+import { getStats, recordResult } from "./lib/supabase";
+import type { StatsState, DailyProgress, Matchup } from "./types";
+import "./App.css";
+import { initProgress, loadProgress, saveProgress } from "./lib/storage";
+import RoundTracker from "./components/RoundTracker";
+import DailySummary from "./components/DailySummary";
 
 export default function App() {
-  const [{ left, right }, setPokemons] = useState<RoundState>(initRound)
-  const [streak,  setStreak]  = useState<number>(0)
-  const [phase,   setPhase]   = useState<GamePhase>('playing')
-  const [result,  setResult]  = useState<GuessResult | null>(null)
-  
-  const [stats,   setStats]   = useState<StatsState>({ left: null, right: null })
-  const [picked,  setPicked]  = useState<'left' | 'right' | null>(null)
-
-  const guess = useCallback(async (side: 'left' | 'right'): Promise<void> => {
-    if (phase !== 'playing') return
-
-    setPhase('reveal')
-    setPicked(side)
-
-    const winner  = side === 'left' ? left  : right
-    const loser   = side === 'left' ? right : left
-   
-
+  // ── State ────────────────────────────────────────────────
+  const [winningSide, setWinningSide] = useState<"left" | "right" | null>(null);
+  const [matchups] = useState<Matchup[]>(getDailyMatchups);
+  const [currentRound, setCurrentRound] = useState<number>(0);
+  const [progress, setProgress] = useState<DailyProgress>(
+    () => loadProgress() ?? initProgress(),
+  );
+  const [stats, setStats] = useState<StatsState>({ left: null, right: null });
+  const [revealing, setRevealing] = useState<boolean>(false);
+  const [showSummary, setShowSummary] = useState<boolean>(
+  () => progress.completed  // auto-show on load if already completed today
+)
+  // ── Derived values ───────────────────────────────────────
+  const currentMatchup = matchups[currentRound];
+  const currentResult = progress.results[currentRound];
+  const winningPokemon = winningSide ? currentMatchup[winningSide] : null;
+  const bannerCorrect = currentResult === "correct";
+  const bannerMessage = winningPokemon
+    ? bannerCorrect
+      ? `✅ Correct! ${winningPokemon.reason}`
+      : `❌ Wrong! ${winningPokemon.name} scores higher. ${winningPokemon.reason}`
+    : "";
+ // ── Methods ────────────────────────────────────────────
+  async function guess(side: "left" | "right"): Promise<void> {
+    if (revealing || progress.completed) return;
+    const matchup = matchups[currentRound];
+    const winner = side === "left" ? matchup.left : matchup.right;
+    const loser = side === "left" ? matchup.right : matchup.left;
     try {
-      await recordResult(winner.id, loser.id)
+      await recordResult(winner.id, loser.id);
     } catch (e) {
-      console.warn('recordResult failed:', e)
+      console.warn("recordResult failed:", e);
     }
-    
+
     const [winnerStats, loserStats] = await Promise.all([
       getStats(winner.id),
       getStats(loser.id),
-    ])
+    ]);
 
-     const correct = winnerStats.votes/ winnerStats.appearances >= loserStats.votes / loserStats.appearances
+    const correct =
+      winnerStats.votes / winnerStats.appearances >=
+      loserStats.votes / loserStats.appearances;
+
+    if (correct) {
+      setWinningSide(side);
+    } else {
+      setWinningSide(side === "left" ? "right" : "left");
+    }
 
     setStats(
-      side === 'left'
+      side === "left"
         ? { left: winnerStats, right: loserStats }
         : { left: loserStats, right: winnerStats },
-    )
+    );
 
-    
+    setRevealing(true);
 
-    setResult({
-      correct,
-      message: correct
-        ? `✅ Correct! ${winner.reason}`
-        : `❌ Wrong! ${loser.name} scores higher. ${loser.reason}`,
-    })
+    // Save this round's result
+    const newResults = [...progress.results];
+    newResults[currentRound] = correct ? "correct" : "incorrect";
+    const isLastRound = currentRound === 9;
+    const newProgress: DailyProgress = {
+      ...progress,
+      results: newResults,
+      completed: isLastRound,
+    };
+    setProgress(newProgress);
+    saveProgress(newProgress);
 
+    // Advance after showing the reveal
     setTimeout(() => {
-      if (correct) {
-        setStreak((s) => s + 1)
-        setPokemons((prev) => {
-          const keep = side === 'left' ? prev.left : prev.right
-          const next = randomPokemon(keep)
-          return side === 'left'
-            ? { left: keep, right: next }
-            : { left: next, right: keep }
-        })
-        setStats({ left: null, right: null })
-        setPicked(null)
-        setResult(null)
-        setPhase('playing')
+      if (isLastRound) {
+        // stay on last round, completed state shows summary
       } else {
-        setPhase('gameover')
+        setCurrentRound((r) => r + 1);
+        setStats({ left: null, right: null });
       }
-    }, 2400)
-  }, [phase, left, right])
-
-  function resetGame(): void {
-    setPokemons(initRound())
-    setStreak(0)
-    setPhase('playing')
-    setResult(null)
-    setStats({ left: null, right: null })
-    setPicked(null)
+      setRevealing(false);
+    }, 2200);
   }
 
-  function isWinner(side: 'left' | 'right'): boolean {
-    if (!result) return false
-    return result.correct ? side === picked : side !== picked
+  function isWinner(side: "left" | "right"): boolean {
+    if (!winningSide) return false;
+    return side === winningSide;
   }
 
-  // During gameover we freeze the cards in their reveal state
-  const cardPhase: GamePhase = phase === 'gameover' ? 'reveal' : phase
-
+  // ── Render ───────────────────────────────────────────────
   return (
     <>
       <header className="app-header">
         <h1>Would you rather eat?</h1>
-        <p>Pick the Pokémon more people would eat. One wrong guess ends your streak.</p>
+        <p>Pick the more popular choice — 10 matchups, new set every day.</p>
       </header>
 
-      <div className="streak-bar">
-        <span>streak</span>
-        <span className="streak-num">{streak}</span>
-      </div>
+      <RoundTracker results={progress.results} currentRound={currentRound} />
 
-      <div className="arena">
-        <PokemonCard
-          pokemon={left}
-          phase={cardPhase}
-          isWinner={isWinner('left')}
-          stats={stats.left}
-          onGuess={() => guess('left')}
-        />
-
-        <div className="vs">VS</div>
-
-        <PokemonCard
-          pokemon={right}
-          phase={cardPhase}
-          isWinner={isWinner('right')}
-          stats={stats.right}
-          onGuess={() => guess('right')}
-        />
-      </div>
-
-      <ResultBanner
-        correct={result?.correct ?? false}
-        message={result?.message ?? ''}
-        visible={result !== null}
-      />
-
-      {phase === 'gameover' && (
-        <GameOver streak={streak} onReset={resetGame} />
+      {!progress.completed && (
+        <>
+          <div className="arena">
+            <PokemonCard
+              pokemon={matchups[currentRound].left}
+              phase={revealing ? "reveal" : "playing"}
+              isWinner={isWinner("left")}
+              stats={stats.left}
+              onGuess={() => guess("left")}
+            />
+            <div className="vs">VS</div>
+            <PokemonCard
+              pokemon={matchups[currentRound].right}
+              phase={revealing ? "reveal" : "playing"}
+              isWinner={isWinner("right")}
+              stats={stats.right}
+              onGuess={() => guess("right")}
+            />
+          </div>
+          <ResultBanner
+            correct={bannerCorrect}
+            message={bannerMessage}
+            visible={revealing}
+          />
+        </>
       )}
+
+      {/* Show the "View Results" button when completed but summary is closed */}
+    {progress.completed && !showSummary && (
+      <button className="view-results-btn" onClick={() => setShowSummary(true)}>
+        View today's results
+      </button>
+    )}
+
+    {showSummary && (
+      <DailySummary
+        progress={progress}
+        matchups={matchups}
+        onClose={() => setShowSummary(false)}
+      />
+    )}
+    
     </>
-  )
+  );
 }
